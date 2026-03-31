@@ -59,14 +59,14 @@ You can install Postman via this website: https://www.postman.com/downloads/
     -   Open another new terminal, edit `ROCKET_PORT` in `.env` to `8003`, then execute `cargo run`.
 
 ## Mandatory Checklists (Subscriber)
--   [ ] Clone https://gitlab.com/ichlaffterlalu/bambangshop-receiver to a new repository.
+-   [x] Clone https://gitlab.com/ichlaffterlalu/bambangshop-receiver to a new repository.
 -   **STAGE 1: Implement models and repositories**
-    -   [ ] Commit: `Create Notification model struct.`
-    -   [ ] Commit: `Create SubscriberRequest model struct.`
-    -   [ ] Commit: `Create Notification database and Notification repository struct skeleton.`
-    -   [ ] Commit: `Implement add function in Notification repository.`
-    -   [ ] Commit: `Implement list_all_as_string function in Notification repository.`
-    -   [ ] Write answers of your learning module's "Reflection Subscriber-1" questions in this README.
+    -   [x] Commit: `Create Notification model struct.`
+    -   [x] Commit: `Create SubscriberRequest model struct.`
+    -   [x] Commit: `Create Notification database and Notification repository struct skeleton.`
+    -   [x] Commit: `Implement add function in Notification repository.`
+    -   [x] Commit: `Implement list_all_as_string function in Notification repository.`
+    -   [x] Write answers of your learning module's "Reflection Subscriber-1" questions in this README.
 -   **STAGE 3: Implement services and controllers**
     -   [ ] Commit: `Create Notification service struct skeleton.`
     -   [ ] Commit: `Implement subscribe function in Notification service.`
@@ -85,5 +85,20 @@ This is the place for you to write reflections:
 ### Mandatory (Subscriber) Reflections
 
 #### Reflection Subscriber-1
+
+# 1. In this tutorial, we used RwLock<> to synchronise the use of Vec of Notifications. Explain why it is necessary for this case, and explain why we do not use Mutex<> instead?
+
+- Mengapa diperlukan: Penggunaan lock diperlukan untuk memastikan thread-safety. Di dalam web server (seperti Rocket), banyak request bisa datang dan diproses secara bersamaan (multi-threading). Jika beberapa thread mencoba membaca dan menulis ke Vector NOTIFICATIONS secara bersamaan tanpa sinkronisasi, akan terjadi data race atau memori korup.
+
+- Mengapa RwLock<> dan bukan Mutex<>: Mutex (Mutual Exclusion) sangat ketat; ia hanya mengizinkan satu thread (baik membaca atau menulis) untuk mengakses data pada satu waktu. Sementara itu, RwLock (Reader-Writer Lock) mengizinkan banyak thread pembaca (reader) untuk mengakses data secara bersamaan selama tidak ada proses penulisan, tetapi jika ada proses penulisan, ia akan mengunci data secara eksklusif untuk satu writer saja. Dalam kasus notifikasi ini, kita berasumsi akan ada jauh lebih banyak proses read (melihat daftar notifikasi) daripada write (menambah notifikasi baru). Oleh karena itu, RwLock memberikan performa yang jauh lebih efisien untuk skenario read-heavy tanpa memblokir pembaca lain seperti yang dilakukan Mutex.
+
+# 2. In this tutorial, we used lazy_static external library to define Vec and DashMap as a "static" variable. Compared to Java where we can mutate the content of a static variable via a static function, why did not Rust allow us to do so?
+Rust memiliki aturan kepemilikan (ownership) dan peminjaman (borrowing) yang sangat ketat untuk menjamin keamanan memori (memory safety) pada saat proses kompilasi (compile-time).
+
+- Di Java, kita bisa bebas memodifikasi variabel static global secara langsung dari banyak thread, yang sering kali memicu bug konkurensi (data race) jika programmer lupa memasang synchronized.
+
+- Di Rust, variabel global/static yang bisa diubah (mutable) dianggap pada dasarnya tidak aman (inherently unsafe) karena sangat rawan data race di lingkungan multi-threaded. Rust akan memaksa kita membungkus operasi mutasi global statis di dalam blok unsafe {}, yang sangat dihindari.
+
+- Untuk menyelesaikannya secara elegan dan safe, kita menggunakan lazy_static! untuk menunda inisialisasi pada saat program berjalan (karena tipe dinamis seperti Vec butuh memori heap alih-alih konstan saat kompilasi), lalu digabungkan dengan struktur data thread-safe seperti RwLock (atau DashMap di bagian sebelumnya) untuk meyakinkan compiler bahwa kita mengakses data global tersebut secara aman tanpa melanggar aturan sinkronisasi Rust.
 
 #### Reflection Subscriber-2
